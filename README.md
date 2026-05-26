@@ -5,6 +5,8 @@
 A clean, responsive web viewer for [NASA's APOD API](https://api.nasa.gov/).  
 Built for students and space enthusiasts.
 
+🌐 **Live site → [itshyunseunglee.github.io/daily-cosmos](https://itshyunseunglee.github.io/daily-cosmos/)**
+
 ---
 
 ## ✨ Features
@@ -17,20 +19,6 @@ Built for students and space enthusiasts.
 - 🔑 Personal API key support (1,000 req/hour vs 30 on default)
 - ✨ Cinematic Ken Burns effect on image load
 - 📱 Fully responsive — works on mobile, tablet, and desktop
-
----
-
-## 🚀 Getting Started
-
-No build step required. Just open `index.html` in any modern browser.
-
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
-open index.html
-```
-
-Or deploy instantly → [GitHub Pages](#-deploy-to-github-pages)
 
 ---
 
@@ -53,15 +41,6 @@ Your key is stored **only** in your browser's `localStorage` — never sent anyw
 │   └── app.js        # All JavaScript logic
 └── README.md
 ```
-
----
-
-## 🌐 Deploy to GitHub Pages
-
-1. Push this repo to GitHub
-2. Go to **Settings → Pages**
-3. Set source to `main` branch, `/ (root)`
-4. Your site will be live at `https://YOUR_USERNAME.github.io/YOUR_REPO/`
 
 ---
 
