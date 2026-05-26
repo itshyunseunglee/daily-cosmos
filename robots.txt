@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://itshyunseunglee.github.io/daily-cosmos/sitemap.xml
