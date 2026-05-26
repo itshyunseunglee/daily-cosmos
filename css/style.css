@@ -128,6 +128,14 @@ header {
   text-transform: uppercase;
 }
 
+/* ── Header controls (datepicker + buttons row) ── */
+.header-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 /* ── Date picker ── */
 .datepicker-wrap {
   display: flex;
@@ -738,7 +746,7 @@ footer a {
   .wrapper { padding: 0 16px 60px; }
 
   header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px 0 32px; }
-  header > div { width: 100%; }
+  .header-controls { width: 100%; }
 
   h1.apod-title { font-size: 2rem; }
 
