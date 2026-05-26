@@ -18,8 +18,9 @@
     />
     <meta name="theme-color" content="#03040a" />
 
-    <!-- Open Graph (SNS 공유 미리보기: 카카오톡, 트위터, 디스코드 등) -->
+    <!-- Open Graph / Social sharing preview -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://itshyunseunglee.github.io/daily-cosmos/" />
     <meta property="og:title" content="Daily Cosmos" />
     <meta
       property="og:description"
@@ -34,7 +35,10 @@
     />
     <meta name="twitter:image" content="https://itshyunseunglee.github.io/daily-cosmos/preview.jpg" />
 
-    <!-- Fonts (preconnect으로 로딩 가속) -->
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://itshyunseunglee.github.io/daily-cosmos/" />
+
+    <!-- Fonts (preconnect for faster loading) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -53,9 +57,9 @@
     <div class="nebula nebula-3" aria-hidden="true"></div>
 
     <!-- API Key Modal -->
-    <div id="api-key-modal">
+    <div id="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-modal-title">
       <div class="modal-box">
-        <h2>🔑 NASA API Key</h2>
+        <h2 id="api-key-modal-title">🔑 NASA API Key</h2>
         <p>
           Get a free personal key at
           <a href="https://api.nasa.gov" target="_blank" rel="noopener"
@@ -83,8 +87,8 @@
     </div>
 
     <!-- Lightbox -->
-    <div id="lightbox">
-      <button id="lightbox-close" aria-label="Close">✕</button>
+    <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full size image viewer">
+      <button id="lightbox-close" aria-label="Close lightbox">✕</button>
       <img id="lightbox-img" src="" alt="Full size APOD" />
     </div>
 
@@ -110,6 +114,8 @@
           </button>
         </div>
       </header>
+
+      <main>
 
       <!-- Loading -->
       <div id="loading">
@@ -223,6 +229,8 @@
           <p class="desc-text" id="apod-desc"></p>
         </div>
       </div>
+
+      </main>
 
       <footer>
         <p>

@@ -34,30 +34,30 @@
   function stop()  { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } }
 
   resize();
-  // 리사이즈 디바운스: 창 조절 중 별 배열 반복 재생성 방지
+  // Debounce resize: prevents star array from rebuilding on every pixel change
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(resize, 150);
   });
-  // 탭 숨김 시 애니메이션 중지 → CPU 절약
+  // Pause animation when tab is hidden to save CPU
   document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
   start();
 })();
 
-/* ── Config 상수 (하드코딩 금지 — 여기서만 수정) ── */
+/* ── Config constants (no hardcoding — edit only here) ── */
 const BASE     = 'https://api.nasa.gov/planetary/apod';
 const LS_KEY   = 'nasa_apod_api_key';
 const MIN_DATE = '1995-06-16';
 
-const FADE_OUT_MS       = 150;         // 콘텐츠 fade-out 대기 시간 (CSS와 맞춤)
-const PARTICLE_GAP_MS   = 80;          // 파티클 생성 최소 간격
-const PARTICLE_TTL_MS   = 800;         // 파티클 수명
-const PARTICLE_CHARS    = ['✦', '·', '⋆', '✧'];
-const DL_DIRECT_MS      = 4000;        // 직접 fetch 타임아웃
-const DL_PROXY_MS       = 8000;        // 프록시 fetch 타임아웃 (병렬 실행이라 넉넉하게)
+const FADE_OUT_MS     = 150;   // Must match CSS fade-out duration
+const PARTICLE_GAP_MS = 80;   // Minimum interval between cursor particle spawns (ms)
+const PARTICLE_TTL_MS = 800;  // Cursor particle lifetime (ms)
+const PARTICLE_CHARS  = ['✦', '·', '⋆', '✧'];
+const DL_DIRECT_MS    = 4000; // Direct fetch timeout (ms)
+const DL_PROXY_MS     = 8000; // CORS proxy fetch timeout — generous because all run in parallel
 
-// CORS 프록시 목록 — URL 함수 배열로 관리 (새 프록시 추가 시 여기만 수정)
+// CORS proxy list — managed as URL-builder functions (add new proxies here only)
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://images.weserv.nl/?url=${url.replace(/^https?:\/\//, '')}`,
@@ -111,11 +111,11 @@ const els = {
   scrollProgress:  document.getElementById('scroll-progress'),
 };
 
-/* ── 비디오 URL 분류 ── */
+/* ── Video URL classifier ── */
 function classifyVideoUrl(url) {
   if (!url) return { type: 'unknown', embedUrl: null };
 
-  // YouTube watch URL → embed (autoplay + mute: 브라우저 정책상 mute 필수)
+  // YouTube watch URL → embed (autoplay + mute required by browser autoplay policy)
   const ytWatch = url.match(/youtube\.com\/watch\?(?:.*&)?v=([\w-]+)/);
   const ytShort = url.match(/youtu\.be\/([\w-]+)/);
   if (ytWatch || ytShort) {
@@ -133,7 +133,7 @@ function classifyVideoUrl(url) {
     return { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vimeo[1]}?autoplay=1&muted=1` };
   }
 
-  // 직접 비디오 파일
+  // Direct video file
   if (/\.(mp4|webm|ogv|mov)(\?|$)/i.test(url)) {
     return { type: 'direct', embedUrl: null };
   }
@@ -141,7 +141,7 @@ function classifyVideoUrl(url) {
   return { type: 'iframe', embedUrl: url };
 }
 
-/* ── 날짜 유틸 ── */
+/* ── Date utilities ── */
 function todayStr() {
   const d = new Date();
   return [
@@ -156,7 +156,7 @@ function formatDate(str) {
     .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// 기준 날짜에서 delta일 이동한 날짜 문자열 반환
+// Returns the date string delta days from base
 function offsetDate(base, delta) {
   const d = new Date(base + 'T12:00:00');
   d.setDate(d.getDate() + delta);
@@ -167,7 +167,7 @@ function offsetDate(base, delta) {
   ].join('-');
 }
 
-/* ── 날짜 이동 (화살표 버튼) ── */
+/* ── Date navigation ── */
 const today = todayStr();
 
 function stepDate(delta) {
@@ -183,7 +183,7 @@ function updateNavButtons() {
   els.btnNext.disabled = cur >= today;
 }
 
-/* ── 랜덤 날짜 ── */
+/* ── Random date ── */
 function randomDate() {
   const start = new Date(MIN_DATE + 'T12:00:00').getTime();
   const end   = new Date(today   + 'T12:00:00').getTime();
@@ -232,6 +232,13 @@ els.apiKeyModal.addEventListener('click', e => { if (e.target === els.apiKeyModa
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeLightbox(); closeKeyModal(); }
+
+  // Arrow key date navigation — disabled when a modal is open or an input is focused
+  if (els.apiKeyModal.classList.contains('open')) return;
+  if (els.lightbox.classList.contains('open')) return;
+  if (document.activeElement.tagName === 'INPUT') return;
+  if (e.key === 'ArrowLeft')  stepDate(-1);
+  if (e.key === 'ArrowRight') stepDate(+1);
 });
 
 /* ── Loading / Error ── */
@@ -253,20 +260,20 @@ function showError(msg, isRateLimit = false) {
 
 els.btnErrorKey.addEventListener('click', openKeyModal);
 
-/* ── APOD 응답 캐시 & 요청 취소 ── */
-const apodCache   = new Map();   // date → data
+/* ── APOD response cache & request cancellation ── */
+const apodCache     = new Map();   // date → data
 let fetchController = null;
 
-/* ── Fetch APOD (fade-out과 병렬 실행) ── */
+/* ── Fetch APOD (fade-out and fetch run in parallel) ── */
 async function fetchAPOD(date) {
-  // 이전 in-flight 요청 취소
+  // Cancel any in-flight request
   fetchController?.abort();
   fetchController = new AbortController();
   const { signal } = fetchController;
 
   updateNavButtons();
 
-  // fade-out 시작 (fetch와 동시에)
+  // Start fade-out while fetch is already in progress
   const fadePromise = els.content.classList.contains('active')
     ? new Promise(resolve => {
         els.content.classList.remove('active');
@@ -281,11 +288,11 @@ async function fetchAPOD(date) {
     let data;
 
     if (apodCache.has(date)) {
-      // 캐시 히트 → fade-out 끝날 때까지만 기다리고 바로 렌더
+      // Cache hit — wait for fade-out then render immediately
       await fadePromise;
       data = apodCache.get(date);
     } else {
-      // 네트워크 fetch + fade-out 병렬 대기
+      // Parallel: network fetch + fade-out
       const apiUrl = `${BASE}?api_key=${getApiKey()}&date=${date}`;
       const [res] = await Promise.all([
         fetch(apiUrl, { signal }),
@@ -300,6 +307,15 @@ async function fetchAPOD(date) {
             : 'API rate limit exceeded. Please wait a moment and try again.';
           throw Object.assign(new Error(hint), { isRateLimit: true });
         }
+        // 400 on "today" can be a timezone edge case:
+        // the user's local date is ahead of NASA's latest published APOD.
+        // Silently fall back to yesterday instead of showing an error.
+        if (res.status === 400 && date === today) {
+          const yesterday = offsetDate(date, -1);
+          els.dateInput.value = yesterday;
+          fetchAPOD(yesterday);
+          return;
+        }
         throw new Error(err.msg || `HTTP ${res.status}`);
       }
 
@@ -308,15 +324,15 @@ async function fetchAPOD(date) {
     }
 
     renderAPOD(data);
-    prefetchAdjacent(date);   // 이웃 날짜 백그라운드 prefetch
+    prefetchAdjacent(date);   // Background prefetch of adjacent dates
 
   } catch (e) {
-    if (e.name === 'AbortError') return;   // 취소된 요청 → 무시
+    if (e.name === 'AbortError') return;   // Cancelled request — ignore silently
     showError(e.message, !!e.isRateLimit);
   }
 }
 
-/* ── 이웃 날짜 Prefetch (백그라운드) ── */
+/* ── Adjacent date prefetch (background) ── */
 function prefetchAdjacent(date) {
   [-1, +1].forEach(delta => {
     const d = offsetDate(date, delta);
@@ -338,7 +354,7 @@ function renderAPOD(data) {
   currentDownloadUrl          = data.hdurl || data.url;
   currentTitle                = data.title;
 
-  // 저작권
+  // Copyright
   els.copyrightText.textContent    = data.copyright?.trim() ?? '';
   els.copyrightStrip.style.display = data.copyright ? 'inline-flex' : 'none';
 
@@ -351,7 +367,7 @@ function renderAPOD(data) {
     if (type === 'direct') {
       els.nativeSource.src              = data.url;
       els.videoDirectLink.href          = data.url;
-      els.nativeVideo.muted             = true;   // autoplay 정책: muted 필수
+      els.nativeVideo.muted             = true;   // muted required by browser autoplay policy
       els.nativeVideo.autoplay          = true;
       els.nativeVideo.load();
       els.nativeVideoWrap.style.display = 'block';
@@ -361,7 +377,7 @@ function renderAPOD(data) {
     }
 
   } else {
-    // 비디오 → 이미지 전환 시 재생 정지
+    // Stop any playing video when switching to image
     els.video.src                     = '';
     els.videoWrap.style.display       = 'none';
     els.nativeSource.src              = '';
@@ -380,7 +396,7 @@ function renderAPOD(data) {
     els.img.onerror = () => {
       if (!sdFallbackDone && hdurl && hdurl !== url) {
         sdFallbackDone = true;
-        els.img.src = url;           // HD 실패 → SD 폴백
+        els.img.src = url;   // HD failed → fall back to SD
       } else {
         els.img.style.display      = 'none';
         els.imgError.style.display = 'flex';
@@ -389,7 +405,7 @@ function renderAPOD(data) {
     };
     els.img.src = hdurl || url;
 
-    // 텍스트는 이미지 로드 전에 먼저 표시
+    // Show text immediately; image fades in when loaded
     els.loading.classList.remove('active');
     els.content.classList.add('active');
     return;
@@ -399,10 +415,10 @@ function renderAPOD(data) {
   els.content.classList.add('active');
 }
 
-/* ── Ken Burns ── */
+/* ── Ken Burns animation ── */
 function triggerKenBurns() {
   els.img.classList.remove('kb-play');
-  void els.img.offsetWidth;   // reflow → 애니메이션 재시작
+  void els.img.offsetWidth;   // force reflow to restart animation from scratch
   els.img.classList.add('kb-play');
 }
 
@@ -410,7 +426,7 @@ function triggerKenBurns() {
 let currentDownloadUrl = '';
 let currentTitle       = '';
 
-// 타임아웃 포함 fetch 헬퍼
+// fetch helper with a per-request timeout
 async function fetchWithTimeout(url, options, ms) {
   const ctrl = new AbortController();
   const id   = setTimeout(() => ctrl.abort(), ms);
@@ -443,7 +459,7 @@ async function downloadImage() {
   btn.disabled    = true;
   const restore   = () => { btn.innerHTML = DL_LABEL; btn.disabled = false; };
 
-  // 직접 fetch + 모든 프록시를 병렬 시도 → 첫 번째 성공 응답 획득
+  // Try direct fetch + all CORS proxies in parallel — use whichever responds first
   const attempts = [
     fetchWithTimeout(url, { mode: 'cors' }, DL_DIRECT_MS),
     ...CORS_PROXIES.map(makeUrl => fetchWithTimeout(makeUrl(url), {}, DL_PROXY_MS)),
@@ -458,8 +474,8 @@ async function downloadImage() {
     return;
   }
 
-  // 스트리밍으로 받으면서 진행률 실시간 표시
-  // content-length 있으면 "⏳ 45%", 없으면 "⏳ 1.2 MB"
+  // Stream the response and show live progress
+  // Shows "⏳ 45%" if Content-Length is known, otherwise "⏳ 1.2 MB"
   try {
     const contentLength = +res.headers.get('content-length') || 0;
     const reader        = res.body.getReader();
@@ -487,12 +503,12 @@ async function downloadImage() {
 els.btnDownload.addEventListener('click', e => { e.stopPropagation(); downloadImage(); });
 
 /* ── Lightbox ── */
-let swipeMoved = false;   // 스와이프 여부 추적 (lightbox 오픈 방지용)
+let swipeMoved = false;   // tracks whether a swipe occurred (prevents lightbox from opening on swipe)
 
 els.imageCard.addEventListener('click', () => {
-  if (swipeMoved) { swipeMoved = false; return; }      // 스와이프면 무시
-  if (els.imgError.style.display === 'flex') return;   // 이미지 에러 상태면 무시
-  if (!els.img.naturalWidth) return;                    // 이미지 미로드 상태면 무시
+  if (swipeMoved) { swipeMoved = false; return; }     // swipe — ignore
+  if (els.imgError.style.display === 'flex') return;  // image error state — ignore
+  if (!els.img.naturalWidth) return;                   // image not yet loaded — ignore
   els.lightboxImg.src = els.img.src;
   els.lightbox.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -507,7 +523,7 @@ function closeLightbox() {
 els.lightboxClose.addEventListener('click', closeLightbox);
 els.lightbox.addEventListener('click', e => { if (e.target === els.lightbox) closeLightbox(); });
 
-/* ── 모바일 스와이프 네비게이션 (← 다음날 / → 이전날) ── */
+/* ── Mobile swipe navigation (swipe left → next day, swipe right → previous day) ── */
 let swipeStartX = 0;
 const navWrapper = document.getElementById('media-nav-wrapper');
 

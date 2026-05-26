@@ -294,7 +294,7 @@ h1.apod-title {
   background: var(--card);
   box-shadow: 0 0 80px rgba(58,108,244,0.12), 0 40px 80px rgba(0,0,0,0.5);
   cursor: zoom-in;
-  /* margin-bottom은 .media-nav-wrapper 가 처리 */
+  /* margin-bottom handled by .media-nav-wrapper */
 }
 
 .image-card img {
@@ -304,7 +304,7 @@ h1.apod-title {
   transform-origin: center center;
 }
 
-/* Ken Burns: 이미지 로드 시 시네마틱 줌인 */
+/* Ken Burns: cinematic zoom-in on image load */
 @keyframes kenBurns {
   from { transform: scale(1.07); filter: brightness(0.65); }
   to   { transform: scale(1);    filter: brightness(1); }
@@ -320,7 +320,7 @@ h1.apod-title {
   pointer-events: none;
 }
 
-/* 하단 버튼 행 */
+/* Bottom action row */
 .card-actions {
   position: absolute;
   bottom: 16px;
@@ -399,7 +399,7 @@ h1.apod-title {
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid var(--border);
-  /* margin-bottom은 .media-nav-wrapper 가 처리 */
+  /* margin-bottom handled by .media-nav-wrapper */
 }
 .video-wrap iframe {
   position: absolute;
@@ -415,7 +415,7 @@ h1.apod-title {
   border: 1px solid var(--border);
   background: var(--card);
   box-shadow: 0 0 80px rgba(58,108,244,0.12), 0 40px 80px rgba(0,0,0,0.5);
-  /* margin-bottom은 .media-nav-wrapper 가 처리 */
+  /* margin-bottom handled by .media-nav-wrapper */
 }
 .native-video-wrap video {
   width: 100%;
@@ -741,6 +741,15 @@ footer a {
 .btn-api-key:hover { border-color: var(--accent); color: var(--accent); }
 .btn-api-key.has-key { color: #4caf7d; border-color: rgba(76,175,125,0.35); }
 
+/* ── Focus styles (keyboard navigation) ── */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+#api-key-input:focus-visible { outline: none; border-color: var(--accent); }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .wrapper { padding: 0 16px 60px; }
@@ -750,15 +759,15 @@ footer a {
 
   h1.apod-title { font-size: 2rem; }
 
-  /* 터치 타겟 최소 44px 확보 */
+  /* Ensure minimum 44px touch targets */
   .btn-nav { width: 44px; height: 44px; font-size: 1.2rem; }
   .btn-prev { left: 8px; }
   .btn-next { right: 8px; }
 
-  /* 모바일에서 Download 버튼 탭하기 쉽게 */
+  /* Easier tap target for Download button on mobile */
   .btn-download { padding: 10px 16px; font-size: 0.72rem; }
 
-  /* 모바일에서 zoom-hint 숨김 (스와이프로 대체) */
+  /* Hide zoom hint on mobile (replaced by swipe gesture) */
   .zoom-hint { display: none; }
 
   .desc-card { padding: 28px 24px; }
@@ -766,7 +775,7 @@ footer a {
   footer { flex-direction: column; gap: 8px; }
 }
 
-/* 터치 기기: 호버 효과 제거 (ghost tap 방지) */
+/* Touch devices: remove hover effects to prevent ghost taps */
 @media (hover: none) {
   .btn-nav:hover:not(:disabled) { background: rgba(3,4,10,0.65); border-color: rgba(91,143,255,0.3); transform: translateY(-50%); }
   .btn-download:hover { background: rgba(3,4,10,0.72); border-color: rgba(91,143,255,0.35); transform: none; }
